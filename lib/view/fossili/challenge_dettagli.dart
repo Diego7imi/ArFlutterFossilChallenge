@@ -64,9 +64,8 @@ class _DettagliChallengeState extends State<DettagliChallenge> {
             Column(
               children: [
                 Expanded(child: scroll()),
-                // Usiamo marrone con opacità per mimetizzare il background
                 Container(
-                  color: marrone, // Usa marrone con opacità
+                  color: marrone,
                   child: const TimerWidget(),
                 ),
               ],
@@ -77,6 +76,11 @@ class _DettagliChallengeState extends State<DettagliChallenge> {
     );
   }
 
+  /// Recupera e prepara tutte le informazioni necessarie per visualizzare una challenge.
+  /// - Ottiene i punti del poligono dell’area della challenge e ne calcola il centro.
+  /// - Associa ogni ammonite (fossile) ai punti corrispondenti nella challenge.
+  /// - Popola la classifica utenti con i rispettivi punteggi e li ordina in modo decrescente.
+  /// - Aggiorna lo stato locale del widget con i dati elaborati.
   _getInfo() async {
     List<Ammonite> listaAmm = [];
     List<UserModel> listUser = [];
@@ -126,6 +130,12 @@ class _DettagliChallengeState extends State<DettagliChallenge> {
     }
   }
 
+
+  /// Costruisce e visualizza una mappa Flutter centrata sull’area della challenge.
+  /// - Mostra una tile MapBox come sfondo.
+  /// - Inserisce un marker statico per riferimento.
+  /// - Disegna il poligono dell’area di gioco.
+  /// - Se la mappa non è pronta, mostra un indicatore di caricamento.
   Widget flutterMap() {
     if (centerPoint == null) {
       return const Center(child: CircularProgressIndicator());
@@ -170,6 +180,11 @@ class _DettagliChallengeState extends State<DettagliChallenge> {
     );
   }
 
+  /// Crea un pannello a scorrimento (DraggableScrollableSheet) contenente tre sezioni:
+  /// - “Informazioni” → Dettagli testuali della challenge.
+  /// - “Classifica” → Lista utenti ordinata per punteggio.
+  /// - “Punti” → Lista ammoniti con punteggio associato.
+  /// Ogni sezione è gestita tramite `IndexedStack` e selezionabile con pulsanti.
   Widget scroll() {
     return DraggableScrollableSheet(
       initialChildSize: 0.75,
@@ -275,6 +290,11 @@ class _DettagliChallengeState extends State<DettagliChallenge> {
     );
   }
 
+  /// Mostra tutte le informazioni descrittive della challenge:
+  /// - Nome, tipo, descrizione, durata e punteggio.
+  /// - Visualizza la posizione con mappa interattiva.
+  /// - Se l’utente è iscritto e la challenge è aperta, mostra il pulsante “GIOCA”.
+  /// - Se la challenge è di tipo “Velocità”, gestisce anche l’avvio del timer di gioco.
   Widget informazioni() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -480,11 +500,14 @@ class _DettagliChallengeState extends State<DettagliChallenge> {
             return const SizedBox.shrink();
           },
         ),
-        const SizedBox(height: 32), // Spazio per evitare sovrapposizione con TimerWidget
+        const SizedBox(height: 32),
       ],
     );
   }
 
+  /// Mostra la classifica della challenge.
+  /// - Elenca gli utenti iscritti con i rispettivi punteggi.
+  /// - Ordina automaticamente in base alla posizione (1°, 2°, 3°, ...).
   Widget classifica() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -536,6 +559,9 @@ class _DettagliChallengeState extends State<DettagliChallenge> {
     );
   }
 
+  /// Visualizza la lista degli ammoniti (fossili) associati alla challenge.
+  /// - Ogni ammonite è accompagnato da un’immagine e dal punteggio.
+  /// - Usa una ListView non scrollabile, incorporata nel foglio principale.
   Widget puntiAmmoniti() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -598,6 +624,8 @@ class _DettagliChallengeState extends State<DettagliChallenge> {
     );
   }
 
+  /// Verifica se una challenge è ancora aperta (cioè giocabile).
+  /// Restituisce `true` se la data corrente è compresa tra dataInizio e scadenzaIscr.
   bool isChallengeOpen(ChallengeModel challenge) {
     DateTime now = DateTime.now();
     DateTime? startDate = DateTime.tryParse(challenge.dataInizio ?? ' ');
@@ -607,6 +635,9 @@ class _DettagliChallengeState extends State<DettagliChallenge> {
     return now.isAfter(startDate) && now.isBefore(endDate);
   }
 
+
+  /// Calcola il punto centrale (centroide) di un poligono geografico.
+  /// Restituisce la media delle coordinate latitudine/longitudine.
   LatLng calculatePolygonCenter(List<LatLng> points) {
     double latSum = 0.0;
     double lngSum = 0.0;

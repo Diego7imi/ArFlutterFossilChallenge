@@ -15,7 +15,6 @@ import 'ammonite_dettagli.dart';
 import 'ammonite_polyline.dart';
 import '../../helpers/auth_view_model.dart';
 
-//late UserModel user;
 class ChallengeRaccolta extends StatefulWidget {
   final List<Ammonite> lista;
   final String challengeId;
@@ -30,7 +29,6 @@ class _ChallengeRaccoltaState extends State<ChallengeRaccolta> {
 
   UserModel? user;
   final viewModel = AmmoniteViewModel();
-  //late List<Ammonite> lista;
   final viewModelAuth = AuthViewModel();
   List<LatLng> points = [];
 
@@ -39,10 +37,6 @@ class _ChallengeRaccoltaState extends State<ChallengeRaccolta> {
     super.initState();
     points.clear();
     _loadUser();
-
-    //bool giaRaccolto = user.lista_challenge?[widget.challengeId]?.contains(widget.lista[index].id) ?? false;
-
-    //widget.lista = ammoniti;
   }
 
   @override
@@ -50,6 +44,9 @@ class _ChallengeRaccoltaState extends State<ChallengeRaccolta> {
     super.dispose();
   }
 
+  /// Costruisce la schermata principale della challenge di cattura.
+  /// Mostra la lista dei fossili disponibili, un campo di ricerca,
+  /// e un timer persistente in basso che indica la durata della sfida attiva.
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -57,13 +54,12 @@ class _ChallengeRaccoltaState extends State<ChallengeRaccolta> {
         leading: IconButton(
           icon: Icon(Icons.arrow_back),
           onPressed: () {
-            Navigator.pop(context); // Torna indietro alla pagina precedente
+            Navigator.pop(context);
           },
         ),
         backgroundColor: marrone,
         centerTitle: true,
         title: Text('CHALLENGE CATTURA', style: defaultTextStyle),
-        //actions: [countDown(context)], // Commentato o rimosso
       ),
       backgroundColor: grey300,
       body: SafeArea(
@@ -87,16 +83,15 @@ class _ChallengeRaccoltaState extends State<ChallengeRaccolta> {
                 ),
               ),
             ),
-            // Aggiungiamo il TimerWidget in basso e centrato
             Align(
               alignment: Alignment.bottomCenter,
               child: Padding(
-                padding: const EdgeInsets.all(10), // Margine dal fondo
+                padding: const EdgeInsets.all(10),
                 child: AnimatedContainer(
-                  duration: Duration(milliseconds: 600),   // Questo tipo di container non mi piace
+                  duration: Duration(milliseconds: 600),
                   padding: EdgeInsets.symmetric(horizontal: 8, vertical: 0),
                   decoration: BoxDecoration(
-                    color: marrone, // Colore coerente con l'app
+                    color: marrone,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: TimerWidget(),
@@ -108,9 +103,14 @@ class _ChallengeRaccoltaState extends State<ChallengeRaccolta> {
       ),
     );
   }
+
+  /// Costruisce la lista dei fossili presenti nella challenge.
+  /// Ogni elemento mostra immagine, nome, zona, e due azioni:
+  /// - Mappa: apre la posizione del fossile.
+  /// - AR Fossil: permette di catturarlo in realtà aumentata (se non già raccolto).
   Widget _listViewFossils() {
     return SizedBox(
-      height: MediaQuery.of(context).size.height * 0.75, // Altezza fissa mantenuta
+      height: MediaQuery.of(context).size.height * 0.75,
       child: ListView.separated(
         itemCount: widget.lista.length,
         scrollDirection: Axis.vertical,
@@ -121,7 +121,7 @@ class _ChallengeRaccoltaState extends State<ChallengeRaccolta> {
               Get.to(() => DettagliAmmonite(model: widget.lista[index]));
             },
             child: Container(
-              height: MediaQuery.of(context).size.height * 0.15, // Altezza fissa per ogni elemento
+              height: MediaQuery.of(context).size.height * 0.15,
               margin: const EdgeInsetsDirectional.fromSTEB(0, 0, 10, 20),
               child: AspectRatio(
                 aspectRatio: 3 / 1,
@@ -143,7 +143,7 @@ class _ChallengeRaccoltaState extends State<ChallengeRaccolta> {
                         ),
                       ),
                       const SizedBox(width: 10),
-                      Expanded( // Usa Expanded per limitare la larghezza del testo
+                      Expanded(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -156,8 +156,8 @@ class _ChallengeRaccoltaState extends State<ChallengeRaccolta> {
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
                               ),
-                              overflow: TextOverflow.ellipsis, // Tronca il testo con "..."
-                              maxLines: 1, // Limita a una riga
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
                             ),
                             const SizedBox(height: 2),
                             Text(
@@ -168,8 +168,8 @@ class _ChallengeRaccoltaState extends State<ChallengeRaccolta> {
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
                               ),
-                              overflow: TextOverflow.ellipsis, // Tronca il testo con "..."
-                              maxLines: 1, // Limita a una riga
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
                             ),
                             const SizedBox(height: 5),
                             Row(
@@ -232,10 +232,12 @@ class _ChallengeRaccoltaState extends State<ChallengeRaccolta> {
             ),
           );
         },
-        separatorBuilder: (context, index) => const SizedBox(width: 20), // Corretto a SizedBox(height: 20) per Axis.vertical
+        separatorBuilder: (context, index) => const SizedBox(width: 20),
       ),
     );
   }
+
+  /// Crea un piccolo bottone grafico, usato come elemento UI ausiliario.
   Widget cardButtons(String path) {
     return SizedBox(
       width: 45,
@@ -254,15 +256,23 @@ class _ChallengeRaccoltaState extends State<ChallengeRaccolta> {
 
     );
   }
+
+
+  /// Campo di ricerca che filtra la lista dei fossili in base al testo inserito.
+  /// Ogni volta che l’utente digita, viene richiamata `filtraLista()`.
   Widget searchText(){
     return Padding(padding: const EdgeInsets.symmetric(horizontal: 30,vertical: 5),
       child: Container(
         decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), color:white, boxShadow: const [
-          BoxShadow(color: Colors.grey, blurRadius: 2.0, spreadRadius: 0.0, offset: Offset(2.0, 2.0), // shadow direction: bottom right
+          BoxShadow(color: Colors.grey, blurRadius: 2.0, spreadRadius: 0.0, offset: Offset(2.0, 2.0),
           )],),
         child: TextFormField(onChanged: (value) =>{filtraLista(value), setState(() {}), },
           decoration:  InputDecoration(hintText: 'Ricerca fossili', hintStyle: TextStyle(color: black54,fontFamily: 'PlayfairDisplay',fontWeight: FontWeight.w400), border: InputBorder.none, prefixIcon: Icon(Icons.search, color:black54,),), style:  TextStyle(color:black54),),),);
   }
+
+
+  /// Filtra la lista dei fossili in base al nome digitato.
+  /// Il filtro è case-insensitive e verifica l’inizio del nome.
   void filtraLista(String text) {
     List<Ammonite> listaCompleta = viewModel.ammonite;
     List<Ammonite> listaFiltrata = [];
@@ -273,18 +283,19 @@ class _ChallengeRaccoltaState extends State<ChallengeRaccolta> {
       }
     }
     setState(() {
-      //widget.lista = listaFiltrata;
     });
   }
 
-  
-
+  /// Mostra un dialogo di conferma prima di uscire dalla challenge.
+  /// Restituisce `true` se l’utente conferma l’uscita.
   Future<bool> showExitDialog()async {
     return await showDialog(barrierDismissible: false,context: context, builder: (context)=>
         customAlertDialog(context,"Vuoi uscire dall'applicazione?"),);
   }
 
 
+  /// Carica dal database l’utente corrente loggato,
+  /// aggiornando lo stato locale (`user`) per riflettere i dati più recenti.
   void _loadUser() async {
     String userId = await viewModelAuth.getIdSession();
     UserModel? currentUser = await viewModelAuth.getUserFormId(userId);

@@ -17,12 +17,8 @@ import '../../widgets/custom_dialog.dart';
 import 'challenge_dettagli.dart';
 
 class Challenge extends StatefulWidget{
-  const Challenge({Key? key}) : super(key: key);  //identificare univocamente il widget nell’albero dei widget
+  const Challenge({Key? key}) : super(key: key);
 
-
-  /*Ogni StatefulWidget ha bisogno di una classe che descriva il suo stato.
-createState() dice quale classe deve gestire lo stato di questo widget.
-Qui ritorni _ChallengeState dove c'è la  logica e variabili che possono cambiare.*/
   @override
   State<Challenge> createState() => _ChallengeState();
 }
@@ -37,7 +33,7 @@ class _ChallengeState extends State<Challenge>{
   bool isLoading = true;
 
   LatLng? userPosition;
-  double? maxDistance; //in km
+  double? maxDistance;
   String searchTextValue = '';
 
   @override
@@ -48,6 +44,14 @@ class _ChallengeState extends State<Challenge>{
     _getUserPosition();
   }
 
+  /// Inizializza i dati necessari alla schermata.
+  ///
+  /// Funzionamento:
+  /// - Recupera l’`userId` dalla sessione tramite `authModel`.
+  /// - Controlla le iscrizioni dell’utente alle challenge con `_checkIscrizioni()`.
+  /// - Al termine, imposta `isLoading` su `false` per mostrare la UI.
+  ///
+  /// Se si verifica un errore durante il recupero, viene stampato nel log.
   Future<void> initData() async {
     try{
       userId = await authModel.getIdSession();
@@ -60,6 +64,13 @@ class _ChallengeState extends State<Challenge>{
     }
   }
 
+  /// Verifica se l’utente è iscritto a ciascuna challenge presente nella lista.
+  ///
+  /// Funzionamento:
+  /// - Itera su ogni elemento di `lista` (contenente le challenge disponibili).
+  /// - Per ogni challenge, chiama `viewModel.isUserEnrolled()` per verificare se
+  ///   l’utente corrente è iscritto.
+  /// - Aggiorna lo stato locale (`iscrizioneUtente`) per riflettere il risultato.
   Future<void> _checkIscrizioni() async{
     for (var prove in lista) {
       bool isEnrolled = await viewModel.isUserEnrolled(prove.id.toString(), userId);
@@ -68,18 +79,21 @@ class _ChallengeState extends State<Challenge>{
     }
   }
 
+  /// Recupera la posizione geografica corrente dell’utente.
+  ///
+  /// Funzionamento:
+  /// - Controlla che i servizi di localizzazione siano abilitati.
+  /// - Verifica e richiede i permessi di geolocalizzazione.
+  /// - Se tutto è valido, ottiene la posizione GPS corrente con `Geolocator.getCurrentPosition`.
+  /// - Aggiorna lo stato con la posizione (`userPosition`) come `LatLng`.
   Future<void> _getUserPosition() async{
     bool serviceEnabled;
     LocationPermission permission;
-
-    // Controlla se i servizi di localizzazione sono abilitati
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       print('Servizi di localizzazione disabilitati');
       return;
     }
-
-    // Controlla i permessi
     permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
@@ -88,18 +102,12 @@ class _ChallengeState extends State<Challenge>{
         return;
       }
     }
-
-    // Ottieni la posizione
     Position position = await Geolocator.getCurrentPosition(
       desiredAccuracy: LocationAccuracy.high,
     );
     setState(() {
       userPosition = LatLng(position.latitude, position.longitude);
     });
-
-    // Riapplica il filtro dopo aver ottenuto la posizione
-
-    //filtraLista('');
   }
 
   @override
@@ -107,6 +115,17 @@ class _ChallengeState extends State<Challenge>{
     super.dispose();
   }
 
+  /// Costruisce la UI principale della schermata.
+  ///
+  /// Funzionamento:
+  /// - Se `isLoading` è `true`, mostra un indicatore di caricamento.
+  /// - Altrimenti, costruisce la schermata principale con:
+  ///   - barra di ricerca (`searchText()`),
+  ///   - filtro per distanza (`distanceFilter()`),
+  ///   - lista di challenge tramite `_listViewChallenge()`.
+  ///
+  /// La UI è racchiusa in uno `Scaffold` con `SafeArea` e supporta il
+  /// comportamento personalizzato per il tasto “indietro” (`showExitDialog`).
   @override
   Widget build(BuildContext context) {
     if (isLoading){
@@ -128,14 +147,9 @@ class _ChallengeState extends State<Challenge>{
                 Row(
                   children: [
                     Expanded(flex: 8, child: searchText()),
-                    //const SizedBox(width: 2),
                     Expanded(flex: 2, child: distanceFilter()),
                   ],
                 ),
-                /*const SizedBox(height: 10,),
-                searchText(),
-                const SizedBox(height: 10),
-                distanceFilter(),*/
                 const SizedBox(height: 15),
                 _listViewChallenge(),
               ],
@@ -145,6 +159,14 @@ class _ChallengeState extends State<Challenge>{
     );
   }
 
+  /// Costruisce la lista delle challenge visualizzate nella schermata.
+  ///
+  /// Funzionamento:
+  /// - Mostra ogni challenge in una `ListView` con immagine, nome, descrizione e pulsante.
+  /// - Il pulsante consente di iscriversi o disiscriversi alla challenge.
+  /// - Se la challenge è chiusa (`isChallengeOpen == false`), mostra “CHIUSA”.
+  ///
+  /// Il tap sull’intero container apre la schermata dei dettagli tramite `Get.to()`.
   Widget _listViewChallenge(){
     return SizedBox(
       height: MediaQuery.of(context).size.height*0.75,
@@ -157,7 +179,7 @@ class _ChallengeState extends State<Challenge>{
           bool enrolled = iscrizioneUtente[cid] ?? false;
           return GestureDetector(
             onTap: (){
-              Get.to(() => DettagliChallenge(model: lista[index], utenteIscritto: enrolled,)); //al click va nella pagina di dettaglio della challenge
+              Get.to(() => DettagliChallenge(model: lista[index], utenteIscritto: enrolled,));
             },
             child: Container(
               height: MediaQuery.of(context).size.height*0.15,
@@ -176,7 +198,7 @@ class _ChallengeState extends State<Challenge>{
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(10),
                             child: Image(
-                              image: FirebaseImage('gs://serene-circlet-394113.appspot.com/${lista[index].premio}',)  //Eventuale immagine di una challenge (ho messo premio per ora)
+                              image: FirebaseImage('gs://serene-circlet-394113.appspot.com/${lista[index].premio}',)
                             ),
                           ),
                         ),
@@ -287,6 +309,14 @@ class _ChallengeState extends State<Challenge>{
     );
   }
 
+  /// Crea il filtro per distanza massima.
+  ///
+  /// Funzionamento:
+  /// - Mostra un menu a discesa con distanze predefinite (5, 10, 20, 50, 100 km).
+  /// - Quando si seleziona una distanza, aggiorna `maxDistance`
+  ///   e richiama `filtraLista()` per applicare il filtro.
+  ///
+  /// Se nessuna distanza è selezionata, mostra semplicemente “Distanza”.
   Widget distanceFilter() {
     return Container(
       decoration: BoxDecoration(
@@ -301,9 +331,8 @@ class _ChallengeState extends State<Challenge>{
           ),
         ],
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 6), // Rimuoviamo il padding verticale
+      padding: const EdgeInsets.symmetric(horizontal: 6),
       child: SizedBox(
-        //height: 51, // Altezza fissa spostata qui
         child: Center(
           child: DropdownMenu<double?>(
             width: 130,
@@ -315,7 +344,7 @@ class _ChallengeState extends State<Challenge>{
             ),
             inputDecorationTheme: const InputDecorationTheme(
               border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(vertical: 8), // Aggiungiamo padding verticale interno
+              contentPadding: EdgeInsets.symmetric(vertical: 8),
               isDense: true,
             ),
             dropdownMenuEntries: [
@@ -343,11 +372,14 @@ class _ChallengeState extends State<Challenge>{
     );
   }
 
+  /// Campo di ricerca per filtrare le challenge per nome.
+  ///
+  /// Ad ogni modifica del testo, richiama `filtraLista()` e aggiorna lo stato.
   Widget searchText(){
     return Padding(padding: const EdgeInsets.symmetric(horizontal: 30,vertical: 5),
       child: Container(
         decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), color:white, boxShadow: const [
-          BoxShadow(color: Colors.grey, blurRadius: 2.0, spreadRadius: 0.0, offset: Offset(2.0, 2.0), // shadow direction: bottom right
+          BoxShadow(color: Colors.grey, blurRadius: 2.0, spreadRadius: 0.0, offset: Offset(2.0, 2.0),
           )],),
         child: TextFormField(onChanged: (value) async {searchTextValue = value; await filtraLista(value); setState(() {}); },
           decoration:  InputDecoration(hintText: 'Ricerca challenge',
@@ -357,14 +389,21 @@ class _ChallengeState extends State<Challenge>{
           style:  TextStyle(color:black54),),),);
   }
 
+
+  /// Filtra la lista delle challenge in base al nome e alla distanza.
+  ///
+  /// Funzionamento:
+  /// - Confronta il nome con il testo di ricerca (`startsWith` case-insensitive).
+  /// - Se è impostata una distanza massima (`maxDistance`), calcola la distanza
+  ///   tra la posizione dell’utente e il centro del poligono della challenge.
+  /// - Mantiene solo le challenge che soddisfano entrambi i criteri.
+  /// - Aggiorna la lista mostrata (`lista`).
   Future<void> filtraLista(String text) async{
     List<ChallengeModel> listaCompleta = viewModel.challenge;
     List<ChallengeModel> listaFiltrata = [];
     for (int i = 0; i < listaCompleta.length; i++) {
       bool matchesName = listaCompleta[i].nome.toString().toLowerCase().startsWith(text.toLowerCase());
       bool withinDistance = true;
-
-      // Calcola la distanza
       if (maxDistance != null && userPosition != null && listaCompleta[i].posizione != null) {
         List<LatLng> points = await viewModel.getPolygonPoints(listaCompleta[i].id!);
         LatLng centro = calculatePolygonCenter(points);
@@ -373,7 +412,7 @@ class _ChallengeState extends State<Challenge>{
           userPosition!.longitude,
           centro.latitude,
           centro.longitude,
-        ) / 1000; // Converti in km
+        ) / 1000;
         withinDistance = distance <= maxDistance!;
       }
 
@@ -387,11 +426,19 @@ class _ChallengeState extends State<Challenge>{
   }
 
 
+  /// Mostra un dialog di conferma quando l’utente tenta di uscire dall’app.
+  ///
+  /// Restituisce `true` se l’utente conferma l’uscita.
   Future<bool> showExitDialog()async {
     return await showDialog(barrierDismissible: false,context: context, builder: (context)=>
         customAlertDialog(context,"Vuoi uscire dall'applicazione?"),);
   }
 
+  /// Verifica se una challenge è attualmente aperta.
+  ///
+  /// La challenge è considerata “aperta” se:
+  /// - la data corrente è **successiva** alla `dataInizio`
+  /// - e **precedente** alla `scadenzaIscr`.
   bool isChallengeOpen(ChallengeModel challenge) {
     DateTime now = DateTime.now();
     DateTime? startDate = DateTime.tryParse(challenge.dataInizio ?? ' ');
@@ -401,11 +448,17 @@ class _ChallengeState extends State<Challenge>{
     return now.isAfter(startDate) && now.isBefore(endDate);
   }
 
+  /// Format di una data (yyyy-MM-dd) in formato `dd/MM`.
   String formatDate(String date) {
     DateTime parsedDate = DateTime.parse(date);
     return DateFormat('dd/MM').format(parsedDate);
   }
 
+  /// Calcola il punto centrale (centroide) di un poligono.
+  ///
+  /// Funzionamento:
+  /// - Calcola la media aritmetica delle latitudini e longitudini.
+  /// - Restituisce un `LatLng` con le coordinate del centro.
   LatLng calculatePolygonCenter(List<LatLng> points){
     double latSum = 0.0;
     double lngSum = 0.0;

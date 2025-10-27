@@ -20,6 +20,13 @@ class TimerController extends GetxController {
     ever(_authViewModel.userId, (_) => _loadUserId());
   }
 
+  /// Carica l'ID utente attualmente loggato e gestisce lo stato del timer.
+  ///
+  /// Funzionamento:
+  /// - Recupera l'`userId` corrente tramite `_authViewModel.getIdSession()`.
+  /// - Se l’utente è autenticato (`_currentUserId != null`), carica eventuali
+  ///   dati del timer salvati in precedenza (`loadTimerState()`).
+  /// - Se nessun utente è loggato, pulisce lo stato locale del timer (`clearTimerState()`).
   Future<void> _loadUserId() async {
     _currentUserId = await _authViewModel.getIdSession();
     print('TimerController: Loaded userId: $_currentUserId');
@@ -30,12 +37,32 @@ class TimerController extends GetxController {
     }
   }
 
+  /// Verifica se il timer è attualmente in esecuzione per una specifica challenge.
+  ///
+  /// Funzionamento:
+  /// - Controlla che l’oggetto `_timer` non sia `null`
+  ///   (quindi che un timer sia effettivamente attivo)
+  ///   e che `_currentChallengeId` coincida con l’`id` fornito.
+  /// - Ritorna `true` se il timer in corso è relativo a quella challenge,
+  ///   altrimenti `false`.
   bool isTimerRunningForChallenge(String challengeId) {
     final running = _timer != null && _currentChallengeId == challengeId;
     print('isTimerRunningForChallenge $challengeId: $running');
     return running;
   }
 
+  /// Verifica se una challenge è giocabile per l’utente corrente.
+  ///
+  /// Funzionamento:
+  /// - Se l’utente non è loggato (`_currentUserId == null`), ritorna `false`.
+  /// - Recupera dai `SharedPreferences` il timestamp di scadenza
+  ///   associato alla challenge e all’utente.
+  /// - Determina se la challenge è **scaduta** confrontando il tempo corrente
+  ///   con quello memorizzato.
+  /// - Se il timer è ancora in corso o la challenge non è scaduta,
+  ///   la funzione ritorna `true`, consentendo di giocare.
+  ///
+  /// Serve a impedire che un utente riavvii una challenge già scaduta.
   Future<bool> isChallengePlayable(String challengeId) async {
     if (_currentUserId == null) {
       print('isChallengePlayable: No user logged in');
@@ -50,6 +77,24 @@ class TimerController extends GetxController {
     return !isExpired || (isExpired && isRunning);
   }
 
+  /// Avvia un timer associato a una specifica challenge.
+  ///
+  /// Funzionamento:
+  /// - Controlla che un utente sia loggato e che non ci sia già un timer attivo
+  ///   per la stessa challenge.
+  /// - Imposta i valori iniziali (`remainingSeconds`, `_initialDuration`, ecc.)
+  ///   e aggiorna lo stato.
+  /// - Crea un `Timer.periodic` che ogni secondo:
+  ///   - Decrementa i secondi rimanenti.
+  ///   - Aggiorna la UI o i listener.
+  ///   - Quando il tempo scade:
+  ///     - Ferma il timer.
+  ///     - Registra la scadenza nei `SharedPreferences`.
+  ///     - Pulisce lo stato del timer (`clearTimerState()`).
+  ///
+  /// Inoltre, salva immediatamente lo stato iniziale del timer
+  /// (challenge, timestamp e durata) in modo da poterlo ripristinare
+  /// se l’app viene chiusa.
   void startTimer(String challengeId, int durationInSeconds) async {
     if (_currentUserId == null) {
       print('startTimer: No user logged in');
@@ -90,6 +135,14 @@ class TimerController extends GetxController {
     update();
   }
 
+  /// Interrompe manualmente il timer corrente.
+  ///
+  /// Funzionamento:
+  /// - Cancella il timer in corso (se presente).
+  /// - Reimposta le variabili di stato (`_timer`, `_currentChallengeId`,
+  ///   `remainingSeconds`, `isTimerRunning`).
+  /// - Elimina i dati salvati del timer dai `SharedPreferences`.
+  /// - Aggiorna lo stato per riflettere la modifica.
   void stopTimer() async {
     print('Stopping timer for user $_currentUserId');
     _timer?.cancel();
@@ -101,9 +154,19 @@ class TimerController extends GetxController {
     update();
   }
 
+
+  /// Restituisce i secondi rimanenti per il timer in corso.
   int getRemainingSeconds() => remainingSeconds.value;
+  /// Restituisce la durata iniziale impostata al momento dell’avvio del timer.
   int getInitialDuration() => _initialDuration;
 
+  /// Salva lo stato corrente del timer nei `SharedPreferences`.
+  ///
+  /// Funzionamento:
+  /// - Memorizza l’ID della challenge, il timestamp di avvio e la durata.
+  /// - Queste informazioni vengono utilizzate da `loadTimerState()`
+  ///   per ripristinare il timer se l’app viene riaperta.
+  /// - I dati sono salvati in chiavi personalizzate per utente.
   Future<void> saveTimerState(String challengeId, int startTimestamp, int duration) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('timer_challenge_id_$_currentUserId', challengeId);
@@ -112,6 +175,13 @@ class TimerController extends GetxController {
     print('Timer state saved: $challengeId, $startTimestamp, $duration for user $_currentUserId');
   }
 
+  /// Pulisce completamente lo stato salvato del timer per l’utente corrente.
+  ///
+  /// Funzionamento:
+  /// - Cancella tutte le chiavi salvate nei `SharedPreferences`
+  ///   relative al timer dell’utente.
+  /// - Utilizzato sia quando il timer termina naturalmente,
+  ///   sia quando l’utente viene disconnesso.
   Future<void> clearTimerState() async {
     if (_currentUserId == null) return;
     final prefs = await SharedPreferences.getInstance();
@@ -121,6 +191,18 @@ class TimerController extends GetxController {
     print('Timer state cleared for user $_currentUserId');
   }
 
+
+  /// Carica lo stato del timer dai `SharedPreferences` se esiste.
+  ///
+  /// Funzionamento:
+  /// - Verifica la presenza di un timer salvato per l’utente corrente.
+  /// - Se trova dati validi (`challengeId`, `startTimestamp`, `duration`):
+  ///   - Calcola quanti secondi sono passati dal momento dell’avvio.
+  ///   - Se il tempo non è ancora scaduto, riavvia automaticamente il timer
+  ///     con i secondi rimanenti.
+  ///   - Se il tempo è scaduto, marca la challenge come “scaduta”
+  ///     e pulisce i dati salvati.
+  /// - Se non trova dati validi, pulisce eventuali residui.
   Future<void> loadTimerState() async {
     if (_currentUserId == null) return;
     final prefs = await SharedPreferences.getInstance();
@@ -146,6 +228,13 @@ class TimerController extends GetxController {
     }
   }
 
+  /// Rimuove la chiave di scadenza per una specifica challenge.
+  ///
+  /// Funzionamento:
+  /// - Elimina dai `SharedPreferences` la voce `timer_expired_*`
+  ///   associata a quell’utente e challenge.
+  /// - Serve per “resettare” una challenge scaduta, permettendo
+  ///   eventualmente di rigiocarla.
   Future<void> clearExpiredChallenge(String challengeId) async {
     if (_currentUserId == null) return;
     final prefs = await SharedPreferences.getInstance();

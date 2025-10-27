@@ -1,4 +1,3 @@
-// file: lib/view/timer_widget.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../helpers/timer.dart';
@@ -7,12 +6,23 @@ import '../widgets/costanti.dart';
 class TimerWidget extends StatelessWidget {
   const TimerWidget({super.key});
 
+  /// Funzione di utilità che formatta un valore temporale espresso in secondi
+  /// nel formato "minuti:secondi", ad esempio:
+  ///   125 secondi -> "2:05"
+  ///
+  /// Viene usata per mostrare in modo leggibile il tempo rimanente nel timer.
   String _formatTime(int seconds) {
     int minutes = seconds ~/ 60;
     int remainingSeconds = seconds % 60;
     return '$minutes:${remainingSeconds.toString().padLeft(2, '0')}';
   }
 
+  /// Metodo principale che costruisce l’interfaccia grafica del widget del timer.
+  /// Il widget è reattivo grazie a `Obx` (di GetX), quindi si aggiorna automaticamente
+  /// ogni volta che cambia uno stato osservabile nel `TimerController`.
+  ///
+  /// Mostra una barra di avanzamento e il tempo rimanente formattato.
+  /// Quando il timer non è in esecuzione, non mostra nulla (usa `SizedBox.shrink()`).
   @override
   Widget build(BuildContext context) {
     return Obx(() {
@@ -30,9 +40,8 @@ class TimerWidget extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 6, left: 16, right: 16),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
         decoration: BoxDecoration(
-          color: marrone!.withOpacity(0.8), // Usa marrone con opacità per mimetizzare
+          color: marrone!.withOpacity(0.8),
           borderRadius: BorderRadius.circular(8),
-          // boxShadow rimosso per evitare ombre extra
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -40,7 +49,7 @@ class TimerWidget extends StatelessWidget {
             Text(
               'Tempo rimanente: ${_formatTime(controller.remainingSeconds.value)}',
               style: const TextStyle(
-                color: Colors.white, // Bianco per contrasto con marrone
+                color: Colors.white,
                 fontSize: 15,
                 fontFamily: 'PlayfairDisplay',
               ),
