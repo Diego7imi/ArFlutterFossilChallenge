@@ -17,8 +17,12 @@ import '../../widgets/custom_dialog.dart';
 import 'challenge_dettagli.dart';
 
 class Challenge extends StatefulWidget{
-  const Challenge({Key? key}) : super(key: key);
+  const Challenge({Key? key}) : super(key: key);  //identificare univocamente il widget nell’albero dei widget
 
+
+  /*Ogni StatefulWidget ha bisogno di una classe che descriva il suo stato.
+createState() dice quale classe deve gestire lo stato di questo widget.
+Qui ritorni _ChallengeState dove c'è la  logica e variabili che possono cambiare.*/
   @override
   State<Challenge> createState() => _ChallengeState();
 }

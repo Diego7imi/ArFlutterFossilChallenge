@@ -17,8 +17,6 @@ class TimerController extends GetxController {
   void onInit() {
     super.onInit();
     _loadUserId();
-    //migrateSharedPreferences();
-    // Ascolta i cambiamenti dell'utente
     ever(_authViewModel.userId, (_) => _loadUserId());
   }
 
@@ -28,7 +26,6 @@ class TimerController extends GetxController {
     if (_currentUserId != null) {
       await loadTimerState();
     } else {
-      // Se non c'è un utente, pulisci lo stato del timer
       await clearTimerState();
     }
   }
@@ -77,7 +74,6 @@ class TimerController extends GetxController {
         _timer = null;
         _currentChallengeId = null;
         isTimerRunning.value = false;
-        // Salva il timestamp di scadenza
         final prefs = await SharedPreferences.getInstance();
         final expiryKey = 'timer_expired_$_currentUserId' '_$challengeId';
         await prefs.setInt(expiryKey, DateTime.now().millisecondsSinceEpoch ~/ 1000);
@@ -110,7 +106,6 @@ class TimerController extends GetxController {
 
   Future<void> saveTimerState(String challengeId, int startTimestamp, int duration) async {
     final prefs = await SharedPreferences.getInstance();
-    // Usa chiavi specifiche per l'utente
     await prefs.setString('timer_challenge_id_$_currentUserId', challengeId);
     await prefs.setInt('timer_start_timestamp_$_currentUserId', startTimestamp);
     await prefs.setInt('timer_duration_$_currentUserId', duration);
@@ -120,7 +115,6 @@ class TimerController extends GetxController {
   Future<void> clearTimerState() async {
     if (_currentUserId == null) return;
     final prefs = await SharedPreferences.getInstance();
-    // Rimuovi solo le chiavi specifiche per l'utente corrente
     await prefs.remove('timer_challenge_id_$_currentUserId');
     await prefs.remove('timer_start_timestamp_$_currentUserId');
     await prefs.remove('timer_duration_$_currentUserId');
@@ -158,14 +152,6 @@ class TimerController extends GetxController {
     final expiryKey = 'timer_expired_$_currentUserId' '_$challengeId';
     await prefs.remove(expiryKey);
     print('Cleared expired challenge $challengeId for user $_currentUserId');
-  }
-
-  Future<void> migrateSharedPreferences() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('timer_challenge_id');
-    await prefs.remove('timer_start_timestamp');
-    await prefs.remove('timer_duration');
-    await prefs.remove('timer_user_id');
   }
 
   @override
